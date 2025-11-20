@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的笔记本 - 本地笔记管理</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Markdown 解析库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div id="loginPage" class="login-page">
+        <div class="login-container">
+            <div class="login-icon">🔐</div>
+            <h1>我的笔记本</h1>
+            <p>请输入密码以访问</p>
+            <form id="loginForm">
+                <input
+                    type="password"
+                    id="passwordInput"
+                    class="form-input"
+                    placeholder="请输入密码..."
+                    required
+                    autocomplete="off"
+                >
+                <button type="submit" class="btn btn-primary btn-block">
+                    🔓 解锁
+                </button>
+            </form>
+            <p id="loginError" class="login-error" style="display: none;"></p>
+            <p id="loginHint" class="login-hint" style="display: none;">提示：69</p>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div id="app" class="app-container" style="display: none;">
+
+        <!-- 顶部导航栏 -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="app-title">📝 我的笔记本</h1>
+                <div class="header-actions">
+                    <button id="exportBtn" class="btn btn-secondary" title="导出数据">
+                        📥 导出
+                    </button>
+                    <button id="importBtn" class="btn btn-secondary" title="导入数据">
+                        📤 导入
+                    </button>
+                    <button id="logoutBtn" class="btn btn-secondary" title="退出登录">
+                        🚪 退出
+                    </button>
+                    <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+
+            <!-- 侧边栏 - 类型筛选 -->
+            <aside class="sidebar">
+                <nav class="filter-nav">
+                    <h2 class="sidebar-title">笔记类型</h2>
+                    <ul class="filter-list">
+                        <li>
+                            <button class="filter-btn active" data-type="all">
+                                📋 全部笔记
+                                <span class="count" id="count-all">0</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="filter-btn" data-type="book">
+                                📚 读书笔记
+                                <span class="count" id="count-book">0</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="filter-btn" data-type="movie">
+                                🎬 观影笔记
+                                <span class="count" id="count-movie">0</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="filter-btn" data-type="daily">
+                                📅 日常笔记
+                                <span class="count" id="count-daily">0</span>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- 每日计划入口 -->
+                <div class="daily-plan-section">
+                    <h2 class="sidebar-title">每日计划</h2>
+                    <button id="dailyPlanBtn" class="daily-plan-btn">
+                        📋 今日计划
+                        <span id="dailyPlanAlert" class="daily-plan-alert" style="display: none;">!</span>
+                    </button>
+                    <button id="historyPlanBtn" class="history-plan-btn">
+                        📅 历史计划
+                    </button>
+                </div>
+
+                <!-- 快捷操作 -->
+                <div class="quick-actions">
+                    <button id="addNoteBtn" class="btn btn-primary btn-block">
+                        ➕ 新建笔记
+                    </button>
+                </div>
+            </aside>
+
+            <!-- 右侧内容区 -->
+            <div class="content-area">
+
+                <!-- 视图：笔记列表 -->
+                <div id="listView" class="view active">
+
+                    <!-- 搜索栏 -->
+                    <div class="search-bar">
+                        <input
+                            type="text"
+                            id="searchInput"
+                            class="search-input"
+                            placeholder="🔍 搜索笔记标题或内容..."
+                        >
+                        <button id="clearSearchBtn" class="btn-icon" title="清除搜索">✖</button>
+                    </div>
+
+                    <!-- 排序控制 -->
+                    <div class="toolbar">
+                        <div class="sort-controls">
+                            <label>排序：</label>
+                            <select id="sortSelect" class="sort-select">
+                                <option value="date-desc">最新优先</option>
+                                <option value="date-asc">最旧优先</option>
+                                <option value="title-asc">标题 A-Z</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 笔记列表 -->
+                    <div id="notesList" class="notes-list">
+                        <!-- 动态生成笔记卡片 -->
+                    </div>
+
+                    <!-- 空状态 -->
+                    <div id="emptyState" class="empty-state" style="display: none;">
+                        <div class="empty-icon">📭</div>
+                        <h3>还没有笔记</h3>
+                        <p>点击"新建笔记"按钮开始记录吧！</p>
+                    </div>
+                </div>
+
+                <!-- 视图：笔记详情 -->
+                <div id="detailView" class="view">
+                    <div class="detail-container">
+                        <div class="detail-header">
+                            <button id="backToListBtn" class="btn btn-secondary">
+                                ← 返回列表
+                            </button>
+                            <div class="detail-actions">
+                                <button id="editNoteBtn" class="btn btn-secondary">
+                                    ✏️ 编辑
+                                </button>
+                                <button id="deleteNoteBtn" class="btn btn-danger">
+                                    🗑️ 删除
+                                </button>
+                            </div>
+                        </div>
+                        <div id="noteDetail" class="note-detail">
+                            <!-- 动态生成笔记详情 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 视图：添加/编辑笔记表单 -->
+                <div id="formView" class="view">
+                    <div class="form-container">
+                        <div class="form-header">
+                            <h2 id="formTitle">新建笔记</h2>
+                            <button id="cancelFormBtn" class="btn btn-secondary">
+                                取消
+                            </button>
+                        </div>
+
+                        <form id="noteForm" class="note-form">
+                            <!-- 笔记类型选择 -->
+                            <div class="form-group">
+                                <label class="form-label required">笔记类型</label>
+                                <div class="type-selector">
+                                    <label class="type-option">
+                                        <input type="radio" name="type" value="book" required>
+                                        <span class="type-card">
+                                            <span class="type-icon">📚</span>
+                                            <span class="type-name">读书笔记</span>
+                                        </span>
+                                    </label>
+                                    <label class="type-option">
+                                        <input type="radio" name="type" value="movie" required>
+                                        <span class="type-card">
+                                            <span class="type-icon">🎬</span>
+                                            <span class="type-name">观影笔记</span>
+                                        </span>
+                                    </label>
+                                    <label class="type-option">
+                                        <input type="radio" name="type" value="daily" required>
+                                        <span class="type-card">
+                                            <span class="type-icon">📅</span>
+                                            <span class="type-name">日常笔记</span>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- 通用字段 -->
+                            <div class="form-group">
+                                <label for="noteTitle" class="form-label required">笔记标题</label>
+                                <input
+                                    type="text"
+                                    id="noteTitle"
+                                    name="title"
+                                    class="form-input"
+                                    placeholder="给你的笔记起个标题..."
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="noteDate" class="form-label required">日期</label>
+                                <input
+                                    type="date"
+                                    id="noteDate"
+                                    name="date"
+                                    class="form-input"
+                                    required
+                                >
+                            </div>
+
+                            <!-- 读书笔记特定字段 -->
+                            <div id="bookFields" class="type-specific-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="bookTitle" class="form-label required">书名</label>
+                                    <input
+                                        type="text"
+                                        id="bookTitle"
+                                        class="form-input"
+                                        placeholder="例如：三体"
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label for="author" class="form-label">作者</label>
+                                    <input
+                                        type="text"
+                                        id="author"
+                                        class="form-input"
+                                        placeholder="例如：刘慈欣"
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label for="bookRating" class="form-label">评分</label>
+                                    <div class="rating-input">
+                                        <input
+                                            type="number"
+                                            id="bookRating"
+                                            class="form-input"
+                                            min="1"
+                                            max="5"
+                                            step="0.5"
+                                            placeholder="1-5"
+                                        >
+                                        <span class="rating-hint">⭐ (1-5分)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 观影笔记特定字段 -->
+                            <div id="movieFields" class="type-specific-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="movieTitle" class="form-label required">电影/剧集名称</label>
+                                    <input
+                                        type="text"
+                                        id="movieTitle"
+                                        class="form-input"
+                                        placeholder="例如：星际穿越"
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label for="director" class="form-label">导演</label>
+                                    <input
+                                        type="text"
+                                        id="director"
+                                        class="form-input"
+                                        placeholder="例如：克里斯托弗·诺兰"
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label for="actors" class="form-label">主要演员</label>
+                                    <input
+                                        type="text"
+                                        id="actors"
+                                        class="form-input"
+                                        placeholder="例如：马修·麦康纳, 安妮·海瑟薇"
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label for="movieRating" class="form-label">评分</label>
+                                    <div class="rating-input">
+                                        <input
+                                            type="number"
+                                            id="movieRating"
+                                            class="form-input"
+                                            min="1"
+                                            max="5"
+                                            step="0.5"
+                                            placeholder="1-5"
+                                        >
+                                        <span class="rating-hint">⭐ (1-5分)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 日常笔记提示 -->
+                            <div id="dailyFields" class="type-specific-fields" style="display: none;">
+                                <div class="info-box">
+                                    ℹ️ 日常笔记无需额外字段，直接填写标题和内容即可。
+                                </div>
+                            </div>
+
+                            <!-- 笔记内容 - Markdown 编辑器 -->
+                            <div class="form-group">
+                                <label for="noteContent" class="form-label required">笔记内容</label>
+
+                                <!-- Markdown 工具栏 -->
+                                <div class="markdown-toolbar">
+                                    <button type="button" class="md-btn" onclick="insertMarkdown('bold')" title="粗体">
+                                        <strong>B</strong>
+                                    </button>
+                                    <button type="button" class="md-btn" onclick="insertMarkdown('italic')" title="斜体">
+                                        <em>I</em>
+                                    </button>
+                                    <button type="button" class="md-btn" onclick="insertMarkdown('heading')" title="标题">
+                                        H
+                                    </button>
+                                    <button type="button" class="md-btn" onclick="insertMarkdown('quote')" title="引用">
+                                        "
+                                    </button>
+                                    <button type="button" class="md-btn" onclick="insertMarkdown('code')" title="代码">
+                                        &lt;/&gt;
+                                    </button>
+                                    <button type="button" class="md-btn" onclick="insertMarkdown('link')" title="链接">
+                                        🔗
+                                    </button>
+                                    <button type="button" class="md-btn" onclick="insertMarkdown('ul')" title="无序列表">
+                                        •
+                                    </button>
+                                    <button type="button" class="md-btn" onclick="insertMarkdown('ol')" title="有序列表">
+                                        1.
+                                    </button>
+                                    <span class="md-divider"></span>
+                                    <button type="button" class="md-btn md-preview-btn" id="togglePreviewBtn" onclick="toggleMarkdownPreview()" title="预览">
+                                        👁️ 预览
+                                    </button>
+                                </div>
+
+                                <!-- 编辑器容器 -->
+                                <div class="markdown-editor-container">
+                                    <textarea
+                                        id="noteContent"
+                                        name="content"
+                                        class="form-textarea markdown-textarea"
+                                        rows="12"
+                                        placeholder="支持 Markdown 格式...&#10;&#10;# 标题&#10;**粗体** *斜体*&#10;- 列表项&#10;> 引用&#10;`代码`"
+                                        required
+                                        oninput="updateMarkdownPreview()"
+                                    ></textarea>
+                                    <div id="markdownPreview" class="markdown-preview" style="display: none;">
+                                        <div class="preview-content"></div>
+                                    </div>
+                                </div>
+
+                                <small class="form-hint">支持 Markdown 格式，点击预览按钮查看效果</small>
+                            </div>
+
+                            <!-- 标签 -->
+                            <div class="form-group">
+                                <label for="noteTags" class="form-label">标签</label>
+                                <input
+                                    type="text"
+                                    id="noteTags"
+                                    name="tags"
+                                    class="form-input"
+                                    placeholder="多个标签用逗号分隔，例如：科幻,哲学,必读"
+                                >
+                                <small class="form-hint">标签可以帮助你更好地组织笔记</small>
+                            </div>
+
+                            <!-- 表单按钮 -->
+                            <div class="form-actions">
+                                <button type="button" id="cancelFormBtn2" class="btn btn-secondary">
+                                    取消
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    💾 保存笔记
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 视图：每日计划 -->
+                <div id="dailyPlanView" class="view">
+                    <div class="daily-plan-container">
+                        <div class="form-header">
+                            <h2 id="dailyPlanTitle">📋 今日计划</h2>
+                            <button id="backFromPlanBtn" class="btn btn-secondary">
+                                ← 返回
+                            </button>
+                        </div>
+
+                        <div class="daily-plan-date">
+                            <span id="planDateDisplay"></span>
+                        </div>
+
+                        <!-- 添加任务 -->
+                        <div class="add-task-section">
+                            <div class="add-task-input">
+                                <input
+                                    type="text"
+                                    id="newTaskInput"
+                                    class="form-input"
+                                    placeholder="添加新任务..."
+                                    maxlength="100"
+                                >
+                                <button id="addTaskBtn" class="btn btn-primary">
+                                    ➕ 添加
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 任务列表 -->
+                        <div class="task-list-section">
+                            <div id="taskList" class="task-list">
+                                <!-- 动态生成任务列表 -->
+                            </div>
+                            <div id="emptyTaskState" class="empty-task-state" style="display: none;">
+                                <div class="empty-icon">📝</div>
+                                <p>今天还没有计划</p>
+                                <small>添加一些任务来开始你的一天吧！</small>
+                            </div>
+                        </div>
+
+                        <!-- 计划统计 -->
+                        <div class="plan-stats">
+                            <span>已完成 <strong id="completedCount">0</strong> / <strong id="totalCount">0</strong> 个任务</span>
+                            <div class="progress-bar">
+                                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 视图：历史计划 -->
+                <div id="historyPlanView" class="view">
+                    <div class="history-plan-container">
+                        <div class="form-header">
+                            <h2>📅 历史计划</h2>
+                            <div class="header-actions">
+                                <button id="exportPlansBtn" class="btn btn-secondary" title="导出所有计划">
+                                    📤 导出
+                                </button>
+                                <button id="importPlansBtn" class="btn btn-secondary" title="导入计划">
+                                    📥 导入
+                                </button>
+                                <button id="backFromHistoryBtn" class="btn btn-secondary">
+                                    ← 返回
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 隐藏的文件输入 -->
+                        <input type="file" id="planFileInput" accept=".json" style="display: none;">
+
+                        <!-- 统计概览 -->
+                        <div class="history-stats-cards">
+                            <div class="stats-card">
+                                <div class="stats-icon">📊</div>
+                                <div class="stats-content">
+                                    <div class="stats-label">累计天数</div>
+                                    <div class="stats-value" id="totalDaysCount">0</div>
+                                </div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-icon">✅</div>
+                                <div class="stats-content">
+                                    <div class="stats-label">完成任务</div>
+                                    <div class="stats-value" id="totalCompletedCount">0</div>
+                                </div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-icon">📝</div>
+                                <div class="stats-content">
+                                    <div class="stats-label">总任务数</div>
+                                    <div class="stats-value" id="totalTasksCount">0</div>
+                                </div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-icon">🎯</div>
+                                <div class="stats-content">
+                                    <div class="stats-label">平均完成率</div>
+                                    <div class="stats-value" id="avgCompletionRate">0%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 主内容区域：左右分栏 -->
+                        <div class="history-content">
+                            <!-- 左侧：日历 -->
+                            <div class="history-left-panel">
+                                <!-- 月份选择器 -->
+                                <div class="month-selector">
+                                    <button id="prevMonthBtn" class="month-nav-btn">◀</button>
+                                    <div class="current-month" id="currentMonthDisplay"></div>
+                                    <button id="nextMonthBtn" class="month-nav-btn">▶</button>
+                                </div>
+
+                                <!-- 迷你日历 -->
+                                <div class="mini-calendar">
+                                    <div class="calendar-weekdays">
+                                        <div class="weekday">日</div>
+                                        <div class="weekday">一</div>
+                                        <div class="weekday">二</div>
+                                        <div class="weekday">三</div>
+                                        <div class="weekday">四</div>
+                                        <div class="weekday">五</div>
+                                        <div class="weekday">六</div>
+                                    </div>
+                                    <div id="calendarDays" class="calendar-days">
+                                        <!-- 动态生成日历日期 -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 右侧：选中日期的计划详情 -->
+                            <div class="history-right-panel">
+                                <div id="selectedDatePlan" class="selected-date-plan" style="display: none;">
+                                    <div class="selected-date-header">
+                                        <h3 id="selectedDateTitle"></h3>
+                                        <button id="deleteHistoryPlanBtn" class="btn btn-danger btn-sm" title="删除该日计划">
+                                            🗑️ 删除
+                                        </button>
+                                    </div>
+                                    <div id="selectedDateTaskList" class="selected-date-tasks">
+                                        <!-- 动态生成该日期的任务 -->
+                                    </div>
+                                    <div class="selected-date-stats">
+                                        <span>完成 <strong id="selectedCompletedCount">0</strong> / <strong id="selectedTotalCount">0</strong></span>
+                                        <div class="progress-bar">
+                                            <div id="selectedProgressFill" class="progress-fill" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="historyEmptyState" class="history-empty-state">
+                                    <div class="empty-icon">📅</div>
+                                    <p>选择日期查看计划</p>
+                                    <small>点击日历上有标记的日期</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 视图：导出选择 -->
+                <div id="exportView" class="view">
+                    <div class="export-container">
+                        <div class="form-header">
+                            <h2>导出笔记</h2>
+                            <button id="cancelExportBtn" class="btn btn-secondary">
+                                取消
+                            </button>
+                        </div>
+
+                        <div class="export-controls">
+                            <div class="export-filter">
+                                <label>筛选类型：</label>
+                                <select id="exportTypeFilter" class="sort-select">
+                                    <option value="all">全部类型</option>
+                                    <option value="book">📚 读书笔记</option>
+                                    <option value="movie">🎬 观影笔记</option>
+                                    <option value="daily">📅 日常笔记</option>
+                                </select>
+                            </div>
+                            <div class="export-actions-top">
+                                <button id="selectAllBtn" class="btn btn-secondary">全选</button>
+                                <button id="deselectAllBtn" class="btn btn-secondary">取消全选</button>
+                            </div>
+                        </div>
+
+                        <div id="exportNotesList" class="export-notes-list">
+                            <!-- 动态生成笔记选择列表 -->
+                        </div>
+
+                        <div class="export-summary">
+                            <span>已选择 <strong id="selectedCount">0</strong> 条笔记</span>
+                        </div>
+
+                        <div class="form-actions">
+                            <button id="cancelExportBtn2" class="btn btn-secondary">取消</button>
+                            <button id="confirmExportBtn" class="btn btn-primary">
+                                📥 导出选中笔记
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 视图：导入页面 -->
+                <div id="importView" class="view">
+                    <div class="import-container">
+                        <div class="form-header">
+                            <h2>导入笔记</h2>
+                            <button id="cancelImportBtn" class="btn btn-secondary">
+                                取消
+                            </button>
+                        </div>
+
+                        <div class="import-section">
+                            <h3>📋 导入格式说明</h3>
+                            <div class="info-box">
+                                <p>导入文件必须是 JSON 格式，包含笔记数组。每条笔记需要以下字段：</p>
+                            </div>
+                            <pre class="code-example">[
+  {
+    "type": "book",  // 类型: book/movie/daily
+    "title": "笔记标题",
+    "content": "笔记内容",
+    "date": "2024-01-15",
+    "tags": ["标签1", "标签2"],
+
+    // 读书笔记特有
+    "bookTitle": "书名",
+    "author": "作者",
+    "rating": 5,
+
+    // 观影笔记特有
+    "movieTitle": "影片名",
+    "director": "导演",
+    "actors": "演员"
+  }
+]</pre>
+                        </div>
+
+                        <div class="import-section">
+                            <h3>📁 选择文件</h3>
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <div class="upload-icon">📤</div>
+                                <p>点击选择文件或拖放文件到此处</p>
+                                <p class="file-hint">支持 .json 格式</p>
+                                <input type="file" id="importFileInput2" accept=".json" style="display: none;">
+                            </div>
+                            <div id="selectedFileInfo" class="selected-file-info" style="display: none;">
+                                <span id="selectedFileName"></span>
+                                <button id="clearFileBtn" class="btn-icon">✖</button>
+                            </div>
+                        </div>
+
+                        <div class="import-section">
+                            <h3>📂 导入选项</h3>
+                            <div class="form-group">
+                                <label class="form-label">导入到类别</label>
+                                <div class="import-type-options">
+                                    <label class="radio-option">
+                                        <input type="radio" name="importType" value="keep" checked>
+                                        <span>保持原类别</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="importType" value="book">
+                                        <span>📚 全部导入为读书笔记</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="importType" value="movie">
+                                        <span>🎬 全部导入为观影笔记</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="importType" value="daily">
+                                        <span>📅 全部导入为日常笔记</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-option">
+                                    <input type="checkbox" id="replaceExisting">
+                                    <span>替换现有数据（不勾选则追加）</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="importPreview" class="import-preview" style="display: none;">
+                            <h3>📋 预览</h3>
+                            <p>将导入 <strong id="previewCount">0</strong> 条笔记</p>
+                            <div id="previewList" class="preview-list"></div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button id="cancelImportBtn2" class="btn btn-secondary">取消</button>
+                            <button id="confirmImportBtn" class="btn btn-primary" disabled>
+                                📤 确认导入
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- 模态框：确认删除 -->
+    <div id="confirmModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>确认删除</h3>
+            <p>确定要删除这条笔记吗？此操作无法撤销。</p>
+            <div class="modal-actions">
+                <button id="cancelDeleteBtn" class="btn btn-secondary">取消</button>
+                <button id="confirmDeleteBtn" class="btn btn-danger">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- JavaScript -->
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
