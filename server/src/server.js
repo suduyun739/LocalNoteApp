@@ -10,6 +10,9 @@ const { User, Note, DailyPlan } = require('./models');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 信任代理（Nginx）
+app.set('trust proxy', 1);
+
 // 安全中间件
 app.use(helmet());
 
