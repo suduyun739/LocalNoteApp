@@ -19,13 +19,13 @@ const generateToken = (userId) => {
  */
 router.post('/register', async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, password } = req.body;
 
         // 验证必填字段
-        if (!username || !email || !password) {
+        if (!username || !password) {
             return res.status(400).json({
                 success: false,
-                message: '用户名、邮箱和密码不能为空'
+                message: '用户名和密码不能为空'
             });
         }
 
@@ -38,37 +38,26 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        // 检查邮箱是否已存在
-        const existingEmail = await User.findOne({ where: { email } });
-        if (existingEmail) {
-            return res.status(400).json({
-                success: false,
-                message: '邮箱已被注册'
-            });
-        }
-
-        // 创建用户
+        // 创建用户（使用用户名作为邮箱，格式：username@localnote.local）
         const user = await User.create({
             username,
-            email,
+            email: `${username}@localnote.local`,
             password
         });
 
         // 生成 token
         const token = generateToken(user.id);
 
-        res.status(201).json({
-            success: true,
-            message: '注册成功',
-            data: {
-                user: user.toJSON(),
-                token
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                username: user.username
             }
         });
     } catch (error) {
         console.error('注册错误:', error);
         res.status(500).json({
-            success: false,
             message: '服务器错误'
         });
     }
@@ -80,22 +69,20 @@ router.post('/register', async (req, res) => {
  */
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { username, password } = req.body;
 
         // 验证必填字段
-        if (!email || !password) {
+        if (!username || !password) {
             return res.status(400).json({
-                success: false,
-                message: '邮箱和密码不能为空'
+                message: '用户名和密码不能为空'
             });
         }
 
         // 查找用户
-        const user = await User.findOne({ where: { email } });
+        const user = await User.findOne({ where: { username } });
         if (!user) {
             return res.status(401).json({
-                success: false,
-                message: '邮箱或密码错误'
+                message: '用户名或密码错误'
             });
         }
 
@@ -103,8 +90,7 @@ router.post('/login', async (req, res) => {
         const isValidPassword = await user.validatePassword(password);
         if (!isValidPassword) {
             return res.status(401).json({
-                success: false,
-                message: '邮箱或密码错误'
+                message: '用户名或密码错误'
             });
         }
 
@@ -112,17 +98,15 @@ router.post('/login', async (req, res) => {
         const token = generateToken(user.id);
 
         res.json({
-            success: true,
-            message: '登录成功',
-            data: {
-                user: user.toJSON(),
-                token
+            token,
+            user: {
+                id: user.id,
+                username: user.username
             }
         });
     } catch (error) {
         console.error('登录错误:', error);
         res.status(500).json({
-            success: false,
             message: '服务器错误'
         });
     }
