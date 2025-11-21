@@ -9,38 +9,15 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <!-- 登录页面 -->
-    <div id="loginPage" class="login-page">
-        <div class="login-container">
-            <div class="login-icon">🔐</div>
-            <h1>我的笔记本</h1>
-            <p>请输入密码以访问</p>
-            <form id="loginForm">
-                <input
-                    type="password"
-                    id="passwordInput"
-                    class="form-input"
-                    placeholder="请输入密码..."
-                    required
-                    autocomplete="off"
-                >
-                <button type="submit" class="btn btn-primary btn-block">
-                    🔓 解锁
-                </button>
-            </form>
-            <p id="loginError" class="login-error" style="display: none;"></p>
-            <p id="loginHint" class="login-hint" style="display: none;">提示：69</p>
-        </div>
-    </div>
-
     <!-- 主容器 -->
-    <div id="app" class="app-container" style="display: none;">
+    <div id="app" class="app-container">
 
         <!-- 顶部导航栏 -->
         <header class="header">
             <div class="header-content">
                 <h1 class="app-title">📝 我的笔记本</h1>
                 <div class="header-actions">
+                    <span id="currentUser" class="current-user" style="margin-right: 16px; color: #666;"></span>
                     <button id="exportBtn" class="btn btn-secondary" title="导出数据">
                         📥 导出
                     </button>
@@ -729,7 +706,13 @@
     <div id="toast" class="toast"></div>
 
     <!-- JavaScript -->
-    <script src="db.js"></script>
+    <script>
+        // 登录认证检查
+        if (!localStorage.getItem('token')) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="api.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

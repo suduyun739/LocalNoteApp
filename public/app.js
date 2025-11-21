@@ -21,65 +21,13 @@ const appState = {
     importData: null            // 待导入的数据
 };
 
-// ==================== 登录相关 ====================
-
-const LOGIN_PASSWORD = '666999';
-let loginAttempts = 0;
-
-/**
- * 处理登录
- */
-function handleLogin(event) {
-    event.preventDefault();
-
-    const passwordInput = document.getElementById('passwordInput');
-    const password = passwordInput.value;
-    const errorEl = document.getElementById('loginError');
-    const hintEl = document.getElementById('loginHint');
-
-    if (password === LOGIN_PASSWORD) {
-        // 登录成功
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        initApp();
-    } else {
-        // 登录失败
-        loginAttempts++;
-        passwordInput.value = '';
-
-        if (loginAttempts >= 3) {
-            // 显示提示
-            errorEl.textContent = '密码错误次数过多';
-            errorEl.style.display = 'block';
-            hintEl.style.display = 'block';
-        } else {
-            errorEl.textContent = `密码错误，还剩 ${3 - loginAttempts} 次机会`;
-            errorEl.style.display = 'block';
-        }
-
-        // 抖动效果
-        passwordInput.classList.add('shake');
-        setTimeout(() => passwordInput.classList.remove('shake'), 500);
-    }
-}
-
-// 绑定登录表单
-document.getElementById('loginForm').addEventListener('submit', handleLogin);
+// ==================== 用户认证相关 ====================
 
 /**
  * 退出登录
  */
 function logout() {
-    // 隐藏主应用
-    document.getElementById('app').style.display = 'none';
-    // 显示登录页面
-    document.getElementById('loginPage').style.display = 'flex';
-    // 清空密码输入框
-    document.getElementById('passwordInput').value = '';
-    // 隐藏错误信息
-    document.getElementById('loginError').style.display = 'none';
-    // 切换回列表视图（下次登录时显示）
-    switchView('list');
+    noteAPI.logout(); // 使用 API 模块的登出方法
 }
 
 // ==================== Markdown 相关 ====================
@@ -1000,8 +948,11 @@ async function confirmImport() {
  */
 async function initApp() {
     try {
-        // 初始化数据库
-        await noteDB.init();
+        // 显示当前用户
+        const user = noteAPI.getCurrentUser();
+        if (user) {
+            document.getElementById('currentUser').textContent = `👤 ${user.username}`;
+        }
 
         // 加载笔记列表
         await loadNotesList();
@@ -1019,6 +970,9 @@ async function initApp() {
         showToast('应用初始化失败', 'error');
     }
 }
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', initApp);
 
 /**
  * 绑定所有事件监听器

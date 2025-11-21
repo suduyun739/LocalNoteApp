@@ -38,18 +38,8 @@ router.get('/', async (req, res) => {
             offset: parseInt(offset)
         });
 
-        res.json({
-            success: true,
-            data: {
-                notes: rows,
-                pagination: {
-                    total: count,
-                    page: parseInt(page),
-                    limit: parseInt(limit),
-                    totalPages: Math.ceil(count / limit)
-                }
-            }
-        });
+        // 直接返回笔记数组，与前端 api.js 期望的格式一致
+        res.json(rows);
     } catch (error) {
         console.error('获取笔记列表错误:', error);
         res.status(500).json({
@@ -127,42 +117,28 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
     try {
-        const { id, type, title, content, rating, tags } = req.body;
+        const { type, title, content, rating, tags } = req.body;
 
-        if (!id || !type || !title) {
+        if (!type || !title) {
             return res.status(400).json({
                 success: false,
-                message: 'ID、类型和标题不能为空'
+                message: '类型和标题不能为空'
             });
         }
 
-        const now = Date.now();
-
         const note = await Note.create({
-            id,
             userId: req.userId,
             type,
             title,
             content: content || '',
             rating: rating || null,
-            tags: tags || [],
-            createdAt: now,
-            updatedAt: now
+            tags: tags || []
         });
 
-        res.status(201).json({
-            success: true,
-            message: '笔记创建成功',
-            data: { note }
-        });
+        // 直接返回笔记对象
+        res.status(201).json(note);
     } catch (error) {
         console.error('创建笔记错误:', error);
-        if (error.name === 'SequelizeUniqueConstraintError') {
-            return res.status(400).json({
-                success: false,
-                message: '笔记ID已存在'
-            });
-        }
         res.status(500).json({
             success: false,
             message: '服务器错误'
@@ -197,15 +173,11 @@ router.put('/:id', async (req, res) => {
             title: title || note.title,
             content: content !== undefined ? content : note.content,
             rating: rating !== undefined ? rating : note.rating,
-            tags: tags !== undefined ? tags : note.tags,
-            updatedAt: Date.now()
+            tags: tags !== undefined ? tags : note.tags
         });
 
-        res.json({
-            success: true,
-            message: '笔记更新成功',
-            data: { note }
-        });
+        // 直接返回笔记对象
+        res.json(note);
     } catch (error) {
         console.error('更新笔记错误:', error);
         res.status(500).json({

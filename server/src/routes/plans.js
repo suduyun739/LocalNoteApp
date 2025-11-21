@@ -8,20 +8,55 @@ const { Op } = require('sequelize');
 router.use(authMiddleware);
 
 /**
- * GET /api/plans
+ * GET /api/plans/all
  * 获取所有计划
  */
-router.get('/', async (req, res) => {
+router.get('/all', async (req, res) => {
     try {
         const plans = await DailyPlan.findAll({
             where: { userId: req.userId },
             order: [['date', 'DESC'], ['createdAt', 'ASC']]
         });
 
-        res.json({
-            success: true,
-            data: { plans }
+        res.json(plans.map(p => ({
+            id: p.id,
+            date: p.date,
+            task: p.text,
+            completed: p.completed
+        })));
+    } catch (error) {
+        console.error('获取计划列表错误:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器错误'
         });
+    }
+});
+
+/**
+ * GET /api/plans
+ * 按日期查询计划 (支持 ?date=xxx)
+ */
+router.get('/', async (req, res) => {
+    try {
+        const { date } = req.query;
+
+        const where = { userId: req.userId };
+        if (date) {
+            where.date = date;
+        }
+
+        const plans = await DailyPlan.findAll({
+            where,
+            order: [['date', 'DESC'], ['createdAt', 'ASC']]
+        });
+
+        res.json(plans.map(p => ({
+            id: p.id,
+            date: p.date,
+            task: p.text,
+            completed: p.completed
+        })));
     } catch (error) {
         console.error('获取计划列表错误:', error);
         res.status(500).json({
@@ -64,28 +99,27 @@ router.get('/:date', async (req, res) => {
  */
 router.post('/', async (req, res) => {
     try {
-        const { id, date, text, completed } = req.body;
+        const { date, task, completed } = req.body;
 
-        if (!id || !date || !text) {
+        if (!date || !task) {
             return res.status(400).json({
                 success: false,
-                message: 'ID、日期和内容不能为空'
+                message: '日期和内容不能为空'
             });
         }
 
         const plan = await DailyPlan.create({
-            id,
             userId: req.userId,
             date,
-            text,
-            completed: completed || false,
-            createdAt: Date.now()
+            text: task,
+            completed: completed || false
         });
 
         res.status(201).json({
-            success: true,
-            message: '任务创建成功',
-            data: { plan }
+            id: plan.id,
+            date: plan.date,
+            task: plan.text,
+            completed: plan.completed
         });
     } catch (error) {
         console.error('创建任务错误:', error);
@@ -116,17 +150,18 @@ router.put('/:id', async (req, res) => {
             });
         }
 
-        const { text, completed } = req.body;
+        const { task, completed } = req.body;
 
         await plan.update({
-            text: text !== undefined ? text : plan.text,
+            text: task !== undefined ? task : plan.text,
             completed: completed !== undefined ? completed : plan.completed
         });
 
         res.json({
-            success: true,
-            message: '任务更新成功',
-            data: { plan }
+            id: plan.id,
+            date: plan.date,
+            task: plan.text,
+            completed: plan.completed
         });
     } catch (error) {
         console.error('更新任务错误:', error);
