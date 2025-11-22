@@ -53,16 +53,20 @@ const Note = sequelize.define('Note', {
     createdAt: {
         type: DataTypes.BIGINT,
         allowNull: false,
-        field: 'created_at'
+        field: 'created_at',
+        defaultValue: () => Date.now()
     },
     updatedAt: {
         type: DataTypes.BIGINT,
         allowNull: false,
-        field: 'updated_at'
+        field: 'updated_at',
+        defaultValue: () => Date.now()
     }
 }, {
     tableName: 'notes',
-    timestamps: false,
+    timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
     indexes: [
         {
             fields: ['user_id', 'type']

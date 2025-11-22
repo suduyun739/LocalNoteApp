@@ -30,11 +30,14 @@ const DailyPlan = sequelize.define('DailyPlan', {
     createdAt: {
         type: DataTypes.BIGINT,
         allowNull: false,
-        field: 'created_at'
+        field: 'created_at',
+        defaultValue: () => Date.now()
     }
 }, {
     tableName: 'daily_plans',
-    timestamps: false,
+    timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: false,
     indexes: [
         {
             fields: ['user_id', 'date']
