@@ -106,6 +106,17 @@ class NoteAPI {
         );
     }
 
+    // 获取笔记统计
+    async getStats() {
+        const notes = await this.getAllNotes();
+        return {
+            total: notes.length,
+            book: notes.filter(n => n.type === 'book').length,
+            movie: notes.filter(n => n.type === 'movie').length,
+            daily: notes.filter(n => n.type === 'daily').length
+        };
+    }
+
     // ==================== 每日计划相关 API ====================
 
     // 获取指定日期的计划

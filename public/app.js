@@ -320,7 +320,7 @@ function renderNotesList(notes) {
                     <span class="note-type-badge" style="background-color: ${typeConfig.color}">
                         ${typeConfig.icon} ${typeConfig.name}
                     </span>
-                    <span class="note-date">${formatDate(note.date)}</span>
+                    <span class="note-date">${formatDate(note.createdAt)}</span>
                 </div>
                 <h3 class="note-card-title">${escapeHtml(note.title)}</h3>
                 ${note.itemTitle ? `<div class="note-subtitle">${typeConfig.icon} ${escapeHtml(note.itemTitle)}</div>` : ''}
@@ -431,7 +431,7 @@ function renderNoteDetail(note) {
             <span class="note-type-badge" style="background-color: ${typeConfig.color}">
                 ${typeConfig.icon} ${typeConfig.name}
             </span>
-            <span class="note-date">📅 ${formatDate(note.date)}</span>
+            <span class="note-date">📅 ${formatDate(note.createdAt)}</span>
         </div>
 
         <h2 class="detail-title">${escapeHtml(note.title)}</h2>
@@ -739,7 +739,7 @@ function renderExportNotesList(notes) {
                 <div class="export-note-info">
                     <div class="export-note-title">${escapeHtml(note.title)}</div>
                     <div class="export-note-meta">
-                        ${typeConfig.icon} ${typeConfig.name} · ${formatDate(note.date)}
+                        ${typeConfig.icon} ${typeConfig.name} · ${formatDate(note.createdAt)}
                     </div>
                 </div>
             </div>
@@ -1266,7 +1266,7 @@ async function addNewTask() {
 
     try {
         const task = {
-            text: text,
+            task: text,
             date: getTodayString(),
             completed: false
         };
