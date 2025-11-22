@@ -8,6 +8,88 @@ const { Op } = require('sequelize');
 router.use(authMiddleware);
 
 /**
+ * GET /api/notes/stats
+ * 获取笔记统计信息
+ * 注意：此路由必须在 /:id 之前，否则 stats 会被当作 id 处理
+ */
+router.get('/stats', async (req, res) => {
+    try {
+        const total = await Note.count({ where: { userId: req.userId } });
+        const book = await Note.count({ where: { userId: req.userId, type: 'book' } });
+        const movie = await Note.count({ where: { userId: req.userId, type: 'movie' } });
+        const daily = await Note.count({ where: { userId: req.userId, type: 'daily' } });
+
+        res.json({
+            success: true,
+            data: {
+                total,
+                book,
+                movie,
+                daily
+            }
+        });
+    } catch (error) {
+        console.error('获取统计信息错误:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器错误'
+        });
+    }
+});
+
+/**
+ * POST /api/notes/import
+ * 导入笔记
+ * 注意：此路由必须在 /:id 之前
+ */
+router.post('/import', async (req, res) => {
+    try {
+        const { notes } = req.body;
+
+        if (!Array.isArray(notes) || notes.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: '导入数据格式错误'
+            });
+        }
+
+        // 逐个创建笔记以避免 ID 冲突，跳过已存在的
+        let successCount = 0;
+        let skipCount = 0;
+
+        for (const noteData of notes) {
+            try {
+                // 移除旧的 id，让系统自动生成新的
+                const { id, ...noteWithoutId } = noteData;
+
+                await Note.create({
+                    ...noteWithoutId,
+                    userId: req.userId,
+                    createdAt: noteData.createdAt || Date.now(),
+                    updatedAt: noteData.updatedAt || Date.now()
+                });
+                successCount++;
+            } catch (error) {
+                // 跳过失败的笔记
+                skipCount++;
+                console.warn('导入单条笔记失败:', error.message);
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `成功导入 ${successCount} 条笔记${skipCount > 0 ? `，跳过 ${skipCount} 条` : ''}`
+        });
+    } catch (error) {
+        console.error('导入笔记错误:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器错误'
+        });
+    }
+});
+
+/**
  * GET /api/notes
  * 获取笔记列表
  * Query: type, search, page, limit
@@ -31,7 +113,7 @@ router.get('/', async (req, res) => {
             ];
         }
 
-        const { count, rows } = await Note.findAndCountAll({
+        const notes = await Note.findAll({
             where,
             order: [['createdAt', 'DESC']],
             limit: parseInt(limit),
@@ -39,38 +121,9 @@ router.get('/', async (req, res) => {
         });
 
         // 直接返回笔记数组，与前端 api.js 期望的格式一致
-        res.json(rows);
+        res.json(notes);
     } catch (error) {
         console.error('获取笔记列表错误:', error);
-        res.status(500).json({
-            success: false,
-            message: '服务器错误'
-        });
-    }
-});
-
-/**
- * GET /api/notes/stats
- * 获取笔记统计信息
- */
-router.get('/stats', async (req, res) => {
-    try {
-        const total = await Note.count({ where: { userId: req.userId } });
-        const book = await Note.count({ where: { userId: req.userId, type: 'book' } });
-        const movie = await Note.count({ where: { userId: req.userId, type: 'movie' } });
-        const daily = await Note.count({ where: { userId: req.userId, type: 'daily' } });
-
-        res.json({
-            success: true,
-            data: {
-                total,
-                book,
-                movie,
-                daily
-            }
-        });
-    } catch (error) {
-        console.error('获取统计信息错误:', error);
         res.status(500).json({
             success: false,
             message: '服务器错误'
@@ -169,8 +222,8 @@ router.put('/:id', async (req, res) => {
         const { type, title, content, rating, tags } = req.body;
 
         await note.update({
-            type: type || note.type,
-            title: title || note.title,
+            type: type !== undefined ? type : note.type,
+            title: title !== undefined ? title : note.title,
             content: content !== undefined ? content : note.content,
             rating: rating !== undefined ? rating : note.rating,
             tags: tags !== undefined ? tags : note.tags
@@ -215,46 +268,6 @@ router.delete('/:id', async (req, res) => {
         });
     } catch (error) {
         console.error('删除笔记错误:', error);
-        res.status(500).json({
-            success: false,
-            message: '服务器错误'
-        });
-    }
-});
-
-/**
- * POST /api/notes/import
- * 导入笔记
- */
-router.post('/import', async (req, res) => {
-    try {
-        const { notes } = req.body;
-
-        if (!Array.isArray(notes) || notes.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: '导入数据格式错误'
-            });
-        }
-
-        // 添加userId和时间戳
-        const notesWithUser = notes.map(note => ({
-            ...note,
-            userId: req.userId,
-            createdAt: note.createdAt || Date.now(),
-            updatedAt: note.updatedAt || Date.now()
-        }));
-
-        await Note.bulkCreate(notesWithUser, {
-            updateOnDuplicate: ['type', 'title', 'content', 'rating', 'tags', 'updatedAt']
-        });
-
-        res.json({
-            success: true,
-            message: `成功导入 ${notes.length} 条笔记`
-        });
-    } catch (error) {
-        console.error('导入笔记错误:', error);
         res.status(500).json({
             success: false,
             message: '服务器错误'

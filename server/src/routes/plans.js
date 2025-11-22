@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { DailyPlan } = require('../models');
 const authMiddleware = require('../middleware/auth');
-const { Op } = require('sequelize');
 
 // 所有计划路由都需要认证
 router.use(authMiddleware);
@@ -10,6 +9,7 @@ router.use(authMiddleware);
 /**
  * GET /api/plans/all
  * 获取所有计划
+ * 注意：此路由必须在 /:date 之前，否则 'all' 会被当作日期处理
  */
 router.get('/all', async (req, res) => {
     try {

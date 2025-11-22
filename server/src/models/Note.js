@@ -41,13 +41,17 @@ const Note = sequelize.define('Note', {
         allowNull: true,
         get() {
             const rawValue = this.getDataValue('tags');
-            return rawValue ? rawValue.split(',') : [];
+            if (!rawValue) return [];
+            if (Array.isArray(rawValue)) return rawValue;
+            return rawValue.split(',').filter(tag => tag.trim());
         },
         set(value) {
             if (Array.isArray(value)) {
-                this.setDataValue('tags', value.join(','));
-            } else {
+                this.setDataValue('tags', value.filter(tag => tag).join(','));
+            } else if (typeof value === 'string') {
                 this.setDataValue('tags', value);
+            } else {
+                this.setDataValue('tags', '');
             }
         }
     },
