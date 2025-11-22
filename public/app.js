@@ -1231,7 +1231,7 @@ function renderTaskList(tasks) {
                    class="task-checkbox"
                    ${task.completed ? 'checked' : ''}
                    onchange="toggleTaskComplete('${task.id}', this.checked)">
-            <span class="task-text">${escapeHtml(task.text)}</span>
+            <span class="task-text">${escapeHtml(task.task)}</span>
             <button class="task-delete" onclick="deleteTask('${task.id}')" title="删除任务">
                 🗑️
             </button>
@@ -1515,7 +1515,7 @@ async function showSelectedDateDetails(dateStr) {
                        class="task-checkbox"
                        ${task.completed ? 'checked' : ''}
                        disabled>
-                <span class="task-text">${escapeHtml(task.text)}</span>
+                <span class="task-text">${escapeHtml(task.task)}</span>
             </div>
         `).join('');
 
