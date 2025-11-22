@@ -4,7 +4,8 @@ const sequelize = require('../config/database');
 const DailyPlan = sequelize.define('DailyPlan', {
     id: {
         type: DataTypes.STRING(50),
-        primaryKey: true
+        primaryKey: true,
+        defaultValue: () => `plan_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
     },
     userId: {
         type: DataTypes.INTEGER,
